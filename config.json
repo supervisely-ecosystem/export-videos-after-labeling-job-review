@@ -1,0 +1,19 @@
+{
+  "name": "Export videos after review",
+  "description": "Export videos after the passing labeling job review",
+  "categories": [
+    "videos",
+    "export",
+    "labeling_job",
+    "team_member",
+    "videos_dataset"
+  ],
+  "main_script": "src/main.py",
+  "headless": true,
+  "icon": "",
+  "poster": "",
+  "context_menu": {
+    "context_category": "Export",
+    "target": ["videos_project"]
+  }
+}
