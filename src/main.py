@@ -27,8 +27,17 @@ dataset = api.dataset.get_info_by_id(job.dataset_id)
 if job is None or dataset is None or project is None:
     raise RuntimeError("Job, project or dataset not found")
 
-reviewed_item_ids = [video["id"] for video in job.entities if video["reviewStatus"] == "accepted"]
-sly.logger.info(f"Found {len(reviewed_item_ids)} reviewed videos")
+items_type = " ".join(project.type.split("_"))
+reviewed_item_ids = [item["id"] for item in job.entities if item["reviewStatus"] == "accepted"]
+
+if dataset.items_count == 0:
+    sly.logger.info(f"Dataset {dataset.name} is empty")
+    app.stop()
+elif len(reviewed_item_ids) == 0:
+    sly.logger.info(f"No reviewed {items_type} found")
+    app.stop()
+else:
+    sly.logger.info(f"Found {len(reviewed_item_ids)} reviewed {items_type}")
 
 # make project directory path
 STORAGE_DIR = sly.app.get_data_dir()
@@ -45,7 +54,7 @@ if project.type == str(sly.ProjectType.VIDEOS):
 
 reviewed = len(reviewed_item_ids)
 not_reviewed = dataset.items_count - reviewed
-items_type = " ".join(project.type.split("_"))
+
 sly.logger.info(
     f"""
 Dataset {dataset.name} has {dataset.items_count} {items_type}:

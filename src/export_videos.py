@@ -1,3 +1,4 @@
+import os
 from typing import List
 import supervisely as sly
 from supervisely.video_annotation.key_id_map import KeyIdMap
@@ -31,7 +32,9 @@ def export_videos(
         ann_jsons = api.video.annotation.download_bulk(dataset.id, video_ids)
         for video_id, video_name, ann_json in zip(video_ids, video_names, ann_jsons):
             video_ann = sly.VideoAnnotation.from_json(ann_json, project_meta, key_id_map)
-
+            if os.path.splitext(video_name) == '':
+                sly.logger.warn(f"Video name {video_name} has no extension.")
+                video_name = f"{video_name}.mp4"
             video_file_path = dataset_fs.generate_item_path(video_name)
             api.video.download_path(video_id, video_file_path)
             dataset_fs.add_item_file(

@@ -1,6 +1,6 @@
 {
   "name": "Export videos after review",
-  "release": { "version": "v0.0.1", "name": "init release" },
+  "release": { "version": "v0.0.2", "name": "small fixes, logs" },
   "slug": "almaz/export-videos-after-labeling-job-review",
   "description": "Export videos after the passing labeling job review",
   "categories": [
