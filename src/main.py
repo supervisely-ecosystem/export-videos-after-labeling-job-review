@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from src.export_videos import export_videos
+from src.export_images import export_images
+from src.export_pointclouds import export_pointclouds
 
 if sly.is_development():
     load_dotenv("local.env")
@@ -47,10 +49,18 @@ project_dir = os.path.join(STORAGE_DIR, f"{project.id}_{project.name}")
 meta_json = api.project.get_meta(id=project.id)
 project_meta = sly.ProjectMeta.from_json(meta_json)
 
+# FIXME: change archive name (add job ID/name)
+# FIXME: check if all images downloaded (compare with reviewed_item_ids)
 
+sly.logger.info(f"Project type is {project.type}")
 if project.type == str(sly.ProjectType.VIDEOS):
     export_videos(api, dataset, reviewed_item_ids, project_dir, project_meta)
-
+elif project.type == str(sly.ProjectType.IMAGES):
+    export_images(api, dataset, reviewed_item_ids, project_dir, project_meta)
+elif project.type == str(sly.ProjectType.POINT_CLOUDS):
+    export_pointclouds(api, dataset, reviewed_item_ids, project_dir, project_meta)
+else:
+    raise RuntimeError(f"Project type {project.type} is not supported")
 
 reviewed = len(reviewed_item_ids)
 not_reviewed = dataset.items_count - reviewed
