@@ -20,10 +20,8 @@ def export_videos(
     dataset_fs = project_fs.create_dataset(dataset.name)
 
     # get reviewed videos infos
-    videos = api.video.get_list(
-        dataset.id,
-        filters=[{"field": "id", "operator": "in", "value": reviewed_item_ids}],
-    )
+    all_videos = api.video.get_list(dataset.id)
+    videos = [video for video in all_videos if video.id in reviewed_item_ids]
 
     progress = tqdm(total=len(videos), desc=f"Downloading videos...")
     for batch in sly.batched(videos, batch_size=10):
@@ -32,8 +30,7 @@ def export_videos(
         ann_jsons = api.video.annotation.download_bulk(dataset.id, video_ids)
         for video_id, video_name, ann_json in zip(video_ids, video_names, ann_jsons):
             video_ann = sly.VideoAnnotation.from_json(ann_json, project_meta, key_id_map)
-            if os.path.splitext(video_name) == '':
-                sly.logger.warn(f"Video name {video_name} has no extension.")
+            if os.path.splitext(video_name)[1] == "":
                 video_name = f"{video_name}.mp4"
             video_file_path = dataset_fs.generate_item_path(video_name)
             api.video.download_path(video_id, video_file_path)
