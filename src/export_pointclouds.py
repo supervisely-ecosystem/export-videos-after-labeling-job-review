@@ -59,4 +59,3 @@ def export_pointclouds(
         progress.update(len(batch))
 
     project_fs.set_key_id_map(key_id_map)
-    sly.output.set_download(project_dir)

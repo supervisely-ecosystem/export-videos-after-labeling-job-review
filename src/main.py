@@ -43,14 +43,12 @@ else:
 
 # make project directory path
 STORAGE_DIR = sly.app.get_data_dir()
-project_dir = os.path.join(STORAGE_DIR, f"{project.id}_{project.name}")
+project_dir = os.path.join(STORAGE_DIR, f"{job.id}_job_{project.id}_{project.name}")
 
 # get project meta
 meta_json = api.project.get_meta(id=project.id)
 project_meta = sly.ProjectMeta.from_json(meta_json)
 
-# FIXME: change archive name (add job ID/name)
-# FIXME: check if all images downloaded (compare with reviewed_item_ids)
 
 sly.logger.info(f"Project type is {project.type}")
 if project.type == str(sly.ProjectType.VIDEOS):
@@ -61,6 +59,10 @@ elif project.type == str(sly.ProjectType.POINT_CLOUDS):
     export_pointclouds(api, dataset, reviewed_item_ids, project_dir, project_meta)
 else:
     raise RuntimeError(f"Project type {project.type} is not supported")
+
+result_archive = f"{project_dir}.tar.gz"
+sly.fs.archive_directory(project_dir, result_archive)
+sly.output.set_download(result_archive)
 
 reviewed = len(reviewed_item_ids)
 not_reviewed = dataset.items_count - reviewed

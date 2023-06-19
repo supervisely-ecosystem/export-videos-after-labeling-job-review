@@ -36,5 +36,3 @@ def export_images(
             dataset_fs.add_item_raw_bytes(name, img_bytes, ann)
 
         progress.update(len(batch))
-
-    sly.output.set_download(project_dir)
