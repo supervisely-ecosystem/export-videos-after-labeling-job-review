@@ -1,78 +1,62 @@
 import os
 import supervisely as sly
 
-from dotenv import load_dotenv
-from tqdm import tqdm
-
 from src.export_videos import export_videos
 from src.export_images import export_images
 from src.export_pointclouds import export_pointclouds
 
-if sly.is_development():
-    load_dotenv("local.env")
-    load_dotenv(os.path.expanduser("~/supervisely.env"))
-
-api = sly.Api.from_env()
-
-JOB_ID = os.environ.get("modal.state.slyJobId")
-
-app = sly.Application()
+import globals as g
 
 
-if JOB_ID is None:
-    raise RuntimeError("Job ID is not specified")
+def main():
+    items_type = " ".join(g.PROJECT.type.split("_"))
+    reviewed_item_ids = [
+        item["id"] for item in g.JOB.entities if item["reviewStatus"] == "accepted"
+    ]
 
-job = api.labeling_job.get_info_by_id(JOB_ID)
-project = api.project.get_info_by_id(job.project_id)
-dataset = api.dataset.get_info_by_id(job.dataset_id)
+    if g.DATASET.items_count < 1:
+        sly.logger.warn(f"Dataset {g.DATASET.name} is empty")
+    elif len(reviewed_item_ids) < 1:
+        sly.logger.warn(f"Not found {items_type} accepted by reviewer")
+    else:
+        sly.logger.info(f"Found {len(reviewed_item_ids)} reviewed {items_type}")
 
-if job is None or dataset is None or project is None:
-    raise RuntimeError("Job, project or dataset not found")
+        # make project directory path
+        result_dirname = f"{g.JOB.id}_reviewed_items"
+        project_name = f"{g.JOB.id}_job_{g.PROJECT.id}_{g.PROJECT.name}"
+        data_dir = sly.app.get_data_dir()
+        result_dir = os.path.join(data_dir, result_dirname)
+        project_dir = os.path.join(result_dir, project_name)
+        result_archive = f"{result_dir}.tar.gz"
 
-items_type = " ".join(project.type.split("_"))
-reviewed_item_ids = [item["id"] for item in job.entities if item["reviewStatus"] == "accepted"]
+        # get project meta
+        meta_json = g.api.project.get_meta(id=g.PROJECT.id)
+        project_meta = sly.ProjectMeta.from_json(meta_json)
 
-if dataset.items_count == 0:
-    sly.logger.info(f"Dataset {dataset.name} is empty")
-    app.stop()
-elif len(reviewed_item_ids) == 0:
-    sly.logger.info(f"No reviewed {items_type} found")
-    app.stop()
-else:
-    sly.logger.info(f"Found {len(reviewed_item_ids)} reviewed {items_type}")
+        sly.logger.info(f"Project type is {g.PROJECT.type}")
+        if g.PROJECT.type == str(sly.ProjectType.VIDEOS):
+            export_videos(g.api, g.DATASET, reviewed_item_ids, project_dir, project_meta)
+        elif g.PROJECT.type == str(sly.ProjectType.IMAGES):
+            export_images(g.api, g.DATASET, reviewed_item_ids, project_dir, project_meta)
+        elif g.PROJECT.type == str(sly.ProjectType.POINT_CLOUDS):
+            export_pointclouds(g.api, g.DATASET, reviewed_item_ids, project_dir, project_meta)
+        else:
+            raise RuntimeError(f"Project type {g.PROJECT.type} is not supported")
 
-# make project directory path
-STORAGE_DIR = sly.app.get_data_dir()
-project_dir = os.path.join(STORAGE_DIR, f"{job.id}_job_{project.id}_{project.name}")
+        sly.fs.archive_directory(result_dir, result_archive)
+        sly.output.set_download(result_archive)
 
-# get project meta
-meta_json = api.project.get_meta(id=project.id)
-project_meta = sly.ProjectMeta.from_json(meta_json)
+        reviewed = len(reviewed_item_ids)
+        not_reviewed = g.DATASET.items_count - reviewed
+
+        sly.logger.info(
+            f"""
+        Dataset {g.DATASET.name} has {g.DATASET.items_count} {items_type}:
+            * {reviewed} reviewed {items_type} - processed;
+            * {not_reviewed} not reviewed {items_type} - skipped.
+        """
+        )
 
 
-sly.logger.info(f"Project type is {project.type}")
-if project.type == str(sly.ProjectType.VIDEOS):
-    export_videos(api, dataset, reviewed_item_ids, project_dir, project_meta)
-elif project.type == str(sly.ProjectType.IMAGES):
-    export_images(api, dataset, reviewed_item_ids, project_dir, project_meta)
-elif project.type == str(sly.ProjectType.POINT_CLOUDS):
-    export_pointclouds(api, dataset, reviewed_item_ids, project_dir, project_meta)
-else:
-    raise RuntimeError(f"Project type {project.type} is not supported")
-
-result_archive = f"{project_dir}.tar.gz"
-sly.fs.archive_directory(project_dir, result_archive)
-sly.output.set_download(result_archive)
-
-reviewed = len(reviewed_item_ids)
-not_reviewed = dataset.items_count - reviewed
-
-sly.logger.info(
-    f"""
-Dataset {dataset.name} has {dataset.items_count} {items_type}:
-    * {reviewed} reviewed {items_type} - processed;
-    * {not_reviewed} not reviewed {items_type} - skipped.
-"""
-)
-
-app.stop()
+if __name__ == "__main__":
+    main()
