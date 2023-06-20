@@ -5,10 +5,10 @@
   "description": "Export videos after the passing labeling job review",
   "categories": [
     "videos",
+    "images",
+    "pointclouds",
     "export",
-    "labeling_job",
-    "team_member",
-    "videos_dataset"
+    "labeling_job"
   ],
   "main_script": "src/main.py",
   "headless": true,
