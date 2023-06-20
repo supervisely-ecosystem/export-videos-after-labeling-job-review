@@ -12,6 +12,7 @@ def export_images(
     project_dir: str,
     project_meta: sly.ProjectMeta,
 ):
+    # create local project and dataset
     project_fs = sly.Project(project_dir, sly.OpenMode.CREATE)
     project_fs.set_meta(project_meta)
     dataset_fs = project_fs.create_dataset(dataset.name)

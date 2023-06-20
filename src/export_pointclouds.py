@@ -15,6 +15,7 @@ def export_pointclouds(
     project_dir: str,
     project_meta: sly.ProjectMeta,
 ):
+    # create local project and dataset
     key_id_map = KeyIdMap()
     project_fs = sly.PointcloudProject(project_dir, sly.OpenMode.CREATE)
     project_fs.set_meta(project_meta)
@@ -35,11 +36,7 @@ def export_pointclouds(
             pointcloud_ids, pointcloud_names, ann_jsons
         ):
             pc_ann = sly.PointcloudAnnotation.from_json(ann_json, project_meta, key_id_map)
-            if pc_ann.is_empty():
-                not_labeled_items_cnt += 1
-                continue
             pointcloud_file_path = dataset_fs.generate_item_path(pointcloud_name)
-            labeled_items_cnt += 1
 
             api.pointcloud.download_path(pointcloud_id, pointcloud_file_path)
             related_images_path = dataset_fs.get_related_images_path(pointcloud_name)
